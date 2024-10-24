@@ -1,0 +1,1 @@
+document.body.innerhtml = "This is coded with JavaScript!";

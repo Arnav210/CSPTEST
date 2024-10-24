@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Snake Game</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 2px solid #000;
+            background-color: #000;
+        }
+        #score {
+            font-family: Arial, sans-serif;
+            font-size: 24px;
+            color: #000;
+            margin: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div id="score">Score: 0</div>
+    <canvas id="gameCanvas" width="600" height="400"></canvas>
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        const scale = 20; // Size of each block
+        const rows = canvas.height / scale;
+        const cols = canvas.width / scale;
+
+        let snake;
+        let food;
+        let score;
+        let gameInterval;
+        let isGameOver = false;
+
+        document.addEventListener('keydown', changeDirection);
+
+        function setup() {
+            snake = new Snake();
+            food = new Food();
+            score = 0;
+            isGameOver = false;
+            if (gameInterval) clearInterval(gameInterval);
+            gameInterval = setInterval(gameLoop, 100);
+            updateScore();
+        }
+
+        function gameLoop() {
+            if (isGameOver) return;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            snake.update();
+            snake.show();
+            food.show();
+            checkCollision();
+            updateScore();
+        }
+
+        function checkCollision() {
+            // Check if snake eats food
+            if (snake.eat(food)) {
+                // Place new food
+                food = new Food(); 
+                score++;
+            }
+
+            // Check if snake collides with walls
+            if (snake.head.x < 0 || snake.head.x >= canvas.width ||
+                snake.head.y < 0 || snake.head.y >= canvas.height) {
+                gameOver();
+            }
+
+            // Check if snake collides with itself
+            for (let i = 1; i < snake.body.length; i++) {
+                if (snake.head.x === snake.body[i].x &&
+                    snake.head.y === snake.body[i].y) {
+                    gameOver();
+                }
+            }
+        }
+
+        function gameOver() {
+            clearInterval(gameInterval);
+            isGameOver = true;
+            alert('Game Over! Press OK to restart.');
+            setup();
+        }
+
+        function updateScore() {
+            document.getElementById('score').textContent = `Score: ${score}`;
+        }
+
+        function changeDirection(event) {
+            const direction = event.key.replace('Arrow', '').toLowerCase();
+            // Prevent changing to the opposite direction
+            if (direction === 'left' && snake.direction !== 'right') snake.nextDirection = 'left';
+            if (direction === 'right' && snake.direction !== 'left') snake.nextDirection = 'right';
+            if (direction === 'up' && snake.direction !== 'down') snake.nextDirection = 'up';
+            if (direction === 'down' && snake.direction !== 'up') snake.nextDirection = 'down';
+        }
+
+        class Snake {
+            constructor() {
+                this.body = [{ x: scale * 2, y: scale * 2 }];
+                this.direction = 'right';
+                this.nextDirection = 'right';
+            }
+
+            update() {
+                this.direction = this.nextDirection;
+                let head = { ...this.body[0] };
+
+                switch (this.direction) {
+                    case 'right':
+                        head.x += scale;
+                        break;
+                    case 'left':
+                        head.x -= scale;
+                        break;
+                    case 'up':
+                        head.y -= scale;
+                        break;
+                    case 'down':
+                        head.y += scale;
+                        break;
+                }
+
+                // Add new head to the snake's body
+                this.body.unshift(head);
+
+                // Check if the snake has eaten food
+                if (this.eat(food)) {
+                    // Don't remove the tail, because the snake is growing
+                    return;
+                }
+
+                // Remove the tail of the snake
+                this.body.pop();
+            }
+
+            eat(food) {
+                if (this.head.x === food.x && this.head.y === food.y) {
+                    // Add a new segment to the snake's body (grow the snake)
+                    this.body.push({ ...this.body[this.body.length - 1] });
+                    return true;
+                }
+                return false;
+            }
+
+            show() {
+                ctx.fillStyle = 'green';
+                this.body.forEach(segment => ctx.fillRect(segment.x, segment.y, scale, scale));
+            }
+
+            get head() {
+                return this.body[0];
+            }
+        }
+
+        class Food {
+            constructor() {
+                this.x = Math.floor(Math.random() * cols) * scale;
+                this.y = Math.floor(Math.random() * rows) * scale;
+            }
+
+            show() {
+                ctx.fillStyle = 'red';
+                ctx.fillRect(this.x, this.y, scale, scale);
+            }
+        }
+
+        setup();
+    </script>
+</body>
+</html>
